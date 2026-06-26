@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback | Attorney Broker Services</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #0C3057;
+    --navy-deep: #07203D;
+    --gold: #C8922A;
+    --gold-bright: #E0AC4A;
+    --cream: #F4F1EA;
+    --cream-dim: #E8E2D4;
+    --ink: #1B2430;
+    --paper: #FFFDF8;
+    --green-ok: #3E6B4F;
+    --green-tier-bg: #EAF3ED;
+    --red-flag: #8C2F2F;
+    --rule: #D8D0BC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 26px 24px 20px;
+    border-bottom: 4px solid var(--gold);
+  }
+  .header-inner { max-width: 600px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 1.45rem; font-weight: normal; }
+  header h1 span { color: var(--gold-bright); }
+  .subhead { margin: 6px 0 0; font-size: 0.85rem; color: var(--cream-dim); font-style: italic; }
+
+  main { max-width: 600px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-left: 5px solid var(--gold);
+    box-shadow: 0 2px 0 rgba(12,48,87,0.05), 0 8px 24px rgba(12,48,87,0.06);
+    padding: 28px 30px 30px;
+  }
+
+  .card-purpose { margin: 0 0 24px; font-size: 0.9rem; color: #6B6354; font-style: italic; }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .field .optional-tag {
+    color: #8A8270;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: Georgia, serif;
+  }
+
+  select, input[type="text"], input[type="email"], textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+    border: 1px solid #C9BFA6;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230C3057' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .category-btn {
+    padding: 11px 8px;
+    text-align: center;
+    border: 2px solid var(--rule);
+    background: var(--paper);
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 0.88rem;
+    color: var(--ink);
+  }
+  .category-btn.active { border-color: var(--gold); background: var(--cream-dim); color: var(--navy); font-weight: bold; }
+
+  button.btn-submit {
+    width: 100%;
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: bold;
+    font-family: Georgia, serif;
+    font-size: 0.98rem;
+    padding: 13px;
+    border: none;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  button.btn-submit:hover { background: var(--gold-bright); }
+  button.btn-submit:disabled { background: #C9BFA6; color: #8A8270; cursor: not-allowed; }
+
+  .generating-row {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    color: var(--navy);
+    justify-content: center;
+  }
+  .generating-row.active { display: flex; }
+  .stamp-spin {
+    width: 16px; height: 16px;
+    border: 2px solid var(--cream-dim);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-note {
+    display: none;
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #F8EDED;
+    border: 1px solid var(--red-flag);
+    color: var(--red-flag);
+    font-size: 0.88rem;
+  }
+  .error-note.active { display: block; }
+
+  footer { text-align: center; padding: 24px; font-size: 0.78rem; color: #8A8270; font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Tool <span>Feedback</span></h1>
+    <p class="subhead">Found a bug, or something confusing? Tell us \u2014 Attorney Broker Services</p>
+  </div>
+</header>
+
+<main>
+  <div class="card" id="formCard">
+    <p class="card-purpose">This goes straight to Ernest and Mike. Takes about a minute.</p>
+
+    <div class="field">
+      <label for="toolSelect">Which tool is this about?</label>
+      <select id="toolSelect">
+        <option value="">Select a tool&hellip;</option>
+        <option value="Duty Desk">Duty Desk</option>
+        <option value="The Working Numbers">The Working Numbers (Calculators)</option>
+        <option value="Showing Tour Agreement">Showing Tour Agreement</option>
+        <option value="Buyer's Checklist (TREC 20-19)">Buyer's Checklist (TREC 20-19)</option>
+        <option value="Seller's Checklist (TREC 20-19)">Seller's Checklist (TREC 20-19)</option>
+        <option value="Agent's Checklist (TXR-1101)">Agent's Checklist (TXR-1101)</option>
+        <option value="Seller's Guide (TXR-1101)">Seller's Guide (TXR-1101)</option>
+        <option value="Advertising Rules Quick Reference">Advertising Rules Quick Reference</option>
+        <option value="Getting Started Checklist">Getting Started Checklist</option>
+        <option value="Agent Shield (general)">Agent Shield (general)</option>
+        <option value="Something else">Something else</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>What kind of feedback is this?</label>
+      <div class="category-grid" id="categoryGrid"></div>
+    </div>
+
+    <div class="field">
+      <label for="messageInput">What happened, or what would help?</label>
+      <textarea id="messageInput" placeholder="Be as specific as you can \u2014 which case, which screen, what you expected vs. what happened."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="nameInput">Your name <span class="optional-tag">(optional \u2014 leave blank to stay anonymous)</span></label>
+      <input type="text" id="nameInput" placeholder="Full name">
+    </div>
+
+    <div class="field">
+      <label for="emailInput">Your email <span class="optional-tag">(optional \u2014 only if you want a reply)</span></label>
+      <input type="email" id="emailInput" placeholder="you@email.com">
+    </div>
+
+    <button class="btn-submit" id="submitBtn">Send Feedback</button>
+
+    <div class="generating-row" id="sendingRow">
+      <div class="stamp-spin"></div>
+      <span>Sending&hellip;</span>
+    </div>
+    <div class="error-note" id="errorNote"></div>
+  </div>
+</main>
+
+<footer>
+  Feedback helps us fix tools faster. &copy; 2026 Attorney Broker Services, LLC.
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://petfaclkzdudyvyhifaj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_H6IVVyBLqTTsub1zH_igSw_EqimRQ9Y';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const CATEGORIES = [
+  { value: 'bug', label: 'Something\'s Broken' },
+  { value: 'confusing', label: 'Confusing' },
+  { value: 'suggestion', label: 'Suggestion' },
+  { value: 'other', label: 'Other' },
+];
+let selectedCategory = null;
+
+function renderCategoryGrid() {
+  const grid = document.getElementById('categoryGrid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'category-btn' + (selectedCategory === cat.value ? ' active' : '');
+    btn.textContent = cat.label;
+    btn.addEventListener('click', () => {
+      selectedCategory = cat.value;
+      renderCategoryGrid();
+    });
+    grid.appendChild(btn);
+  });
+}
+renderCategoryGrid();
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const tool = document.getElementById('toolSelect').value;
+  const message = document.getElementById('messageInput').value.trim();
+  const agentName = document.getElementById('nameInput').value.trim();
+  const agentEmail = document.getElementById('emailInput').value.trim();
+  const errorNote = document.getElementById('errorNote');
+  const sendingRow = document.getElementById('sendingRow');
+  const submitBtn = document.getElementById('submitBtn');
+
+  errorNote.classList.remove('active');
+
+  if (!tool) {
+    errorNote.textContent = 'Please select which tool this is about.';
+    errorNote.classList.add('active');
+    return;
+  }
+  if (!selectedCategory) {
+    errorNote.textContent = 'Please select a feedback type.';
+    errorNote.classList.add('active');
+    return;
+  }
+  if (!message) {
+    errorNote.textContent = 'Please describe what happened.';
+    errorNote.classList.add('active');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  sendingRow.classList.add('active');
+
+  try {
+    const response = await fetch('/.netlify/functions/submitFeedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool, category: selectedCategory, message, agentName, agentEmail }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || 'Could not send feedback (status ' + response.status + ')');
+    }
+
+    showThankYou();
+
+  } catch (err) {
+    console.error('Feedback submit error:', err);
+    errorNote.textContent = err.message || "Couldn't send feedback. Check your connection and try again.";
+    errorNote.classList.add('active');
+    submitBtn.disabled = false;
+    sendingRow.classList.remove('active');
+  }
+});
+
+function showThankYou() {
+  const card = document.getElementById('formCard');
+  card.innerHTML = `
+    <div style="text-align:center; padding: 20px 0;">
+      <div style="width:56px; height:56px; background:var(--green-tier-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#3E6B4F" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h2 style="margin:0 0 8px; font-size:1.25rem; color:var(--navy); font-weight:normal;">Thanks \u2014 Got It</h2>
+      <p style="margin:0 0 22px; font-size:0.9rem; color:#6B6354; font-style:italic;">Ernest and Mike will see this.</p>
+      <button class="btn-submit" id="anotherBtn" style="max-width:260px; margin:0 auto;">Send Another</button>
+    </div>
+  `;
+  document.getElementById('anotherBtn').addEventListener('click', () => location.reload());
+}
+</script>
+
+</body>
+</html>
